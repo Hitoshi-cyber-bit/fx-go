@@ -2,8 +2,33 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import logging
+from datetime import datetime
+import pytz
 
 logger = logging.getLogger(__name__)
+
+
+def is_market_open() -> tuple[bool, str]:
+    """FX市場が開いているか判定。(開いているか, 状態メッセージ) を返す"""
+    jst = pytz.timezone("Asia/Tokyo")
+    now = datetime.now(jst)
+    weekday = now.weekday()  # 0=月〜6=日
+    hour = now.hour
+
+    # 土曜日6時以降〜日曜日23時59分 → クローズ
+    # 月曜日0時〜5時59分 → クローズ（週明けオープン前）
+    if weekday == 5 and hour >= 6:
+        return False, "⛔ 取引不可 — 週末クローズ中（月曜 06:00 JST にオープン）"
+    if weekday == 6:
+        return False, "⛔ 取引不可 — 週末クローズ中（月曜 06:00 JST にオープン）"
+    if weekday == 0 and hour < 6:
+        return False, "⛔ 取引不可 — 週明けオープン前（月曜 06:00 JST にオープン）"
+
+    # 平日でもNYクローズ直後（土曜0〜5時台）
+    if weekday == 5 and hour < 6:
+        return False, "⛔ 取引不可 — NY市場クローズ済み（月曜 06:00 JST にオープン）"
+
+    return True, "✅ 取引可能"
 
 PAIRS = {
     "USD/JPY": "JPY=X",

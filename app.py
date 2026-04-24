@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 import pytz
 
-from market_data import PAIRS, TIMEFRAMES, fetch_ohlcv
+from market_data import PAIRS, TIMEFRAMES, fetch_ohlcv, is_market_open
 from signals import analyze, calc_ema, calc_rsi
 
 st.set_page_config(
@@ -15,6 +15,22 @@ st.set_page_config(
 
 st.title("📈 FX GO — スキャルピング売買判定")
 st.caption("リアルタイムテクニカル分析で買い・売りタイミングを判定")
+
+# ── 市場オープン確認 ─────────────────────────────────────────
+market_open, market_msg = is_market_open()
+if not market_open:
+    st.error(f"### {market_msg}")
+    st.markdown("""
+    **FX市場の営業時間（JST）**
+    | 曜日 | 状態 |
+    |------|------|
+    | 月曜 06:00 〜 土曜 06:00 | ✅ 取引可能 |
+    | 土曜 06:00 〜 月曜 06:00 | ⛔ 取引不可（週末クローズ） |
+
+    > 下記のシグナルは参考値です。実際の取引は月曜日の市場オープン後に行ってください。
+    """)
+else:
+    st.success(market_msg)
 
 # ── サイドバー：設定 ─────────────────────────────────────────
 with st.sidebar:
